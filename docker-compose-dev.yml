@@ -1,0 +1,49 @@
+services:
+  api:
+    build: ./api
+    command: npm run dev
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - HOST=localhost
+      - MONGO_URL=mongodb://api_db:27017/api
+    volumes:
+      - ./api/src:/usr/src/app/src
+    depends_on:
+      - api_db
+
+  api_db:
+    image: mongo:latest
+    volumes:
+      - mongodb_api:/data/db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: realworld-docker-frontend
+    command: npm start
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    environment:
+      WATCHPACK_POLLING: "true"
+      WDS_SOCKET_PORT: 0
+    volumes:
+      - "./frontend:/usr/src/app"
+      - "/app/node_modules"
+
+  nginx:
+    image: nginx:1-alpine
+    container_name: websystem-docker-local-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/nginx.conf
+    depends_on:
+      - frontend
+      - api
+
+volumes:
+  mongodb_api:
